@@ -7,10 +7,46 @@ const SPAWN = require("child_process").spawn;
 exports.for = function(API, plugin) {
 
 	plugin.install = function(packagePath, options) {
+		// Don't use NPM to call postinstall script and populate ENV with all typical SM ENV variables.
 	    return callNPM(packagePath, [
 	        "run-script",
 	        "postinstall"
 	    ], options);
+	}
+
+	plugin.test = function(node, options) {
+		if (!node.descriptors.package.scripts || !node.descriptors.package.scripts.test) {
+            API.TERM.stdout.writenl("\0yellow(No `scripts.test` property found in package descriptor for package '" + node.path + "'.\0)");
+            return API.Q.resolve();
+		}
+
+		var testCommand = node.descriptors.package.scripts.test;
+
+		if (options.cover) {
+			if (/^(?:node\s*)?(\S*\.js)$/.test(testCommand)) {
+				// TODO: Support other test coverage tools via config.
+				var coverageTestCommand = testCommand.replace(/^node\s*/, "");
+				coverageTestCommand = coverageTestCommand.replace(/\.js$/, "") + ".js";
+				if (PATH.existsSync(PATH.join(node.path, coverageTestCommand))) {
+					testCommand = "istanbul cover --dir .sourcemint/coverage -- " + coverageTestCommand;
+				}
+			} else {
+	            API.TERM.stdout.writenl("\0yellow(Cannot cover tests for '" + node.path + "' as `scripts.test` does not point to a javascript file.\0)");
+	            return API.Q.resolve();
+			}
+		}
+		var opts = API.UTIL.copy(options);
+		opts.cwd = node.path;
+		opts.env = {
+			PATH: API.OS.getEnvPath([
+				PATH.join(node.path, "mapped_packages/.bin"),
+				PATH.join(node.path, "node_modules/.bin"),
+				PATH.join(__dirname, "node_modules/.bin")
+			])
+			// TODO: Populate ENV with all typical SM ENV variables.
+		}
+		testCommand = testCommand.split(" ");
+		return API.OS.spawnInline(testCommand.shift(), testCommand, opts);
 	}
 
 

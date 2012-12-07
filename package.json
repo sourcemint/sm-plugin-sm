@@ -2,5 +2,8 @@
 	"name": "sm-plugin-sm",
 	"version": "0.1.0",
 	"pm": "npm",
-	"main": "./plugin.js"
+	"main": "./plugin.js",
+	"dependencies": {
+        "istanbul": "0.1.x"		
+	}
 }
