@@ -7,6 +7,7 @@ const SPAWN = require("child_process").spawn;
 exports.for = function(API, plugin) {
 
 	plugin.install = function(packagePath, options) {
+        if (!plugin.node.descriptors.package) return API.Q.resolve();
 		// Don't use NPM to call postinstall script and populate ENV with all typical SM ENV variables.
 	    return callNPM(packagePath, [
 	        "run-script",
