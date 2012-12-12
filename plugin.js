@@ -7,12 +7,24 @@ const SPAWN = require("child_process").spawn;
 exports.for = function(API, plugin) {
 
 	plugin.install = function(packagePath, options) {
-        if (!plugin.node.descriptors.package) return API.Q.resolve();
-		// Don't use NPM to call postinstall script and populate ENV with all typical SM ENV variables.
-	    return callNPM(packagePath, [
-	        "run-script",
-	        "postinstall"
-	    ], options);
+        return API.Q.call(function() {
+            if (!PATH.existsSync(PATH.join(packagePath, "package.json"))) {
+                return;
+            }
+            function postinstall() {
+                // Don't use NPM to call postinstall script and populate ENV with all typical SM ENV variables.
+                return callNPM(packagePath, [
+                    "run-script",
+                    "postinstall"
+                ], options);
+            }
+            if (packagePath === plugin.node.path) {
+                return postinstall();
+            }
+            return API.SM_CORE.for(packagePath).install(options).then(function() {
+                return postinstall();
+            });
+        });
 	}
 
 	plugin.test = function(node, options) {
