@@ -11,18 +11,18 @@ exports.for = function(API, plugin) {
             if (!PATH.existsSync(PATH.join(packagePath, "package.json"))) {
                 return;
             }
-            function postinstall() {
-                // Don't use NPM to call postinstall script and populate ENV with all typical SM ENV variables.
+            function install() {
+                // Don't use NPM to call 'install' script and populate ENV with all typical SM ENV variables.
                 return callNPM(packagePath, [
                     "run-script",
-                    "postinstall"
+                    "install"
                 ], options);
             }
             if (packagePath === plugin.node.path) {
-                return postinstall();
+                return install();
             }
             return API.SM_CORE.for(packagePath).install(options).then(function() {
-                return postinstall();
+                return install();
             });
         });
 	}
