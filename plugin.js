@@ -41,7 +41,7 @@ exports.for = function(API, plugin) {
 				var coverageTestCommand = testCommand.replace(/^node\s*/, "");
 				coverageTestCommand = coverageTestCommand.replace(/\.js$/, "") + ".js";
 				if (PATH.existsSync(PATH.join(node.path, coverageTestCommand))) {
-					testCommand = "istanbul cover --dir .sourcemint/coverage -- " + coverageTestCommand;
+					testCommand = "istanbul cover --dir .sm/coverage -- " + coverageTestCommand;
 				}
 			} else {
 	            API.TERM.stdout.writenl("\0yellow(Cannot cover tests for '" + node.path + "' as `scripts.test` does not point to a javascript file.\0)");
