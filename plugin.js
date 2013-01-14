@@ -38,6 +38,7 @@ exports.for = function(API, plugin) {
 		if (options.cover) {
 			if (/^(?:node\s*)?(\S*\.js)$/.test(testCommand)) {
 				// TODO: Support other test coverage tools via config and relocate impl into separate plugins.
+                //       Relocate this to `freedom-platform/dev`.
 				var coverageTestCommand = testCommand.replace(/^node\s*/, "");
 				coverageTestCommand = coverageTestCommand.replace(/\.js$/, "") + ".js";
 				if (PATH.existsSync(PATH.join(node.path, coverageTestCommand))) {
