@@ -6,6 +6,22 @@ const SPAWN = require("child_process").spawn;
 
 exports.for = function(API, plugin) {
 
+
+    plugin.resolveLocator = function(locator, options) {
+        var self = this;
+
+        if (!/^https?:\/\//.test(locator.descriptor.pointer)) {
+
+console.log("locator", locator);
+throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.1.0).");
+
+        }
+
+        return self.node.getPlugin("archive").then(function(pm) {
+            return pm.resolveLocator(locator, options);
+        });
+    }
+
 	plugin.install = function(packagePath, options) {
         return API.Q.call(function() {
             if (!PATH.existsSync(PATH.join(packagePath, "package.json"))) {
