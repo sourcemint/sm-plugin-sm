@@ -4,6 +4,8 @@
     "pm": "npm",
     "main": "./plugin.js",
     "dependencies": {
-        "istanbul": "0.1.x"
+        "istanbul": "~0.1.27",
+        "graceful-fs": "~1.1.14",
+        "ncp": "~0.2.6"
     }
 }
