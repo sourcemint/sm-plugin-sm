@@ -318,82 +318,88 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
 
             function updatePackageDescriptors(callback) {
 
-                var c = 0;
+                function update(node, circularNode) {
+                    try {
 
-                function error(err) {
-                    c = -1;
-                    return callback(err);
+                        // TODO: Always write a package descriptor even if original package did not have one?
+                        if (!node.descriptors.package) return false;
+
+                        var descriptorPath = null;
+                        if (circularNode) {
+                            descriptorPath = PATH.join(path, circularNode.summary.relpath, node.summary.relpath.substring(circularNode.circular.summary.relpath.length), "package.json");
+                        } else {
+                            descriptorPath = PATH.join(path, node.summary.relpath, "package.json");
+                        }
+
+                        var descriptor = API.UTIL.deepCopy(node.descriptors.package);
+
+                        // Remove properties that are not needed at runtime.
+                        delete descriptor.version;
+                        delete descriptor.pm;
+                        delete descriptor.bugs;
+                        delete descriptor.homepage;
+                        delete descriptor.description;
+                        delete descriptor.repository;
+                        delete descriptor.repositories;
+                        delete descriptor.scripts;
+                        delete descriptor.name;
+                        delete descriptor.publish;
+                        delete descriptor.private;
+                        delete descriptor.license;
+                        delete descriptor.licenses;
+                        delete descriptor.author;
+                        delete descriptor.maintainers;
+                        delete descriptor.contributors;
+                        delete descriptor.readme;
+                        delete descriptor.dist;
+                        delete descriptor.keywords;
+                        delete descriptor.readmeFilename;
+                        // sm specific.
+                        delete descriptor.mappings;
+                        delete descriptor.devMappings;
+                        // npm specific.
+                        delete descriptor.dependencies;
+                        delete descriptor.devDependencies;
+                        delete descriptor._id;
+                        delete descriptor._from;
+
+                        // Set some required properties.
+                        descriptor.uid = node.summary.repositoryUri || node.summary.homepageUri || (node.summary.pm.install + "-" + node.summary.name);
+                        if (node.summary.rev) {
+                            descriptor.rev = node.summary.rev;
+                        }
+                        descriptor.name = node.summary.name;
+                        if (node.summary.version) {
+                            descriptor.version = node.summary.version;
+                        }
+                        descriptor.pm = node.summary.pm.install;
+                        descriptor.bundleDependencies = Object.keys(node.children);
+
+                        // TODO: Order properties in standard sequence.
+
+                        if (!PATH.existsSync(descriptorPath)) return;
+
+                        FS.writeFileSync(descriptorPath, JSON.stringify(descriptor, null, 4));
+
+                    } catch(err) {
+                        return callback(err);
+                    }
                 }
-                function done() {
-                    if (c !== 0) return;
-                    c = -1;
-                    return callback(null);
-                }       
 
-                plugin.node.traverse(function(node) {
-                    if (node.circular) return false;
-                    // TODO: Always write a package descriptor even if original package did not have one?
-                    if (!node.descriptors.package) return false;
-
-                    var descriptorPath = PATH.join(path, node.summary.relpath, "package.json");
-
-                    var descriptor = API.UTIL.deepCopy(node.descriptors.package);
-
-                    // Remove properties that are not needed at runtime.
-                    delete descriptor.version;
-                    delete descriptor.pm;
-                    delete descriptor.bugs;
-                    delete descriptor.homepage;
-                    delete descriptor.description;
-                    delete descriptor.repository;
-                    delete descriptor.scripts;
-                    delete descriptor.name;
-                    delete descriptor.publish;
-                    delete descriptor.private;
-                    delete descriptor.license;
-                    delete descriptor.author;
-                    delete descriptor.maintainers;
-                    delete descriptor.contributors;
-                    delete descriptor.readme;
-                    delete descriptor.dist;
-                    delete descriptor.keywords;
-                    delete descriptor.readmeFilename;
-                    // sm specific.
-                    delete descriptor.mappings;
-                    delete descriptor.devMappings;
-                    // npm specific.
-                    delete descriptor.dependencies;
-                    delete descriptor.devDependencies;
-                    delete descriptor._id;
-                    delete descriptor._from;
-
-                    // Set some required properties.
-                    descriptor.uid = node.summary.repositoryUri || node.summary.homepageUri || (node.summary.pm.install + "-" + node.summary.name);
-                    if (node.summary.rev) {
-                        descriptor.rev = node.summary.rev;
-                    }
-                    descriptor.name = node.summary.name;
-                    if (node.summary.version) {
-                        descriptor.version = node.summary.version;
-                    }
-                    descriptor.pm = node.summary.pm.install;
-                    descriptor.bundleDependencies = Object.keys(node.children);
-
-                    // TODO: Order properties in standard sequence.
-
-                    c += 1;
-                    PATH.exists(descriptorPath, function(exists) {
-                        c -= 1;
-                        if (!exists) return done();
-                        c += 1;
-                        FS.writeFile(descriptorPath, JSON.stringify(descriptor, null, 4), function(err) {
-                            if (err) return error(err);
-                            c -= 1;
-                            done();
-                        });
+                function traverse(node, circularNode) {
+                    node.traverse(function(node) {
+                        if (node.circular) {
+                            node.circular.traverse(function(subNode) {
+                                traverse(subNode, node);
+                            });
+                        }
+                        update(node, circularNode);
                     });
-                });
-                done();
+                }
+
+                traverse(plugin.node);
+
+                return callback(null);
             }
 
             var deferred = API.Q.defer();
