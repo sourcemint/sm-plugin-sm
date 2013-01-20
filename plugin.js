@@ -348,6 +348,8 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                     delete descriptor.repository;
                     delete descriptor.scripts;
                     delete descriptor.name;
+                    delete descriptor.publish;
+                    delete descriptor.private;
                     delete descriptor.license;
                     delete descriptor.author;
                     delete descriptor.maintainers;
