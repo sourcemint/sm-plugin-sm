@@ -13,7 +13,6 @@ exports.for = function(API, plugin) {
 
         if (!/^https?:\/\//.test(locator.descriptor.pointer)) {
 
-console.log("locator", locator);
 throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.1.0).");
 
         }
@@ -364,7 +363,7 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                         delete descriptor._from;
 
                         // Set some required properties.
-                        descriptor.uid = node.summary.repositoryUri || node.summary.homepageUri || (node.summary.pm.install + "-" + node.summary.name);
+                        descriptor.uid = node.summary.uid;
                         if (node.summary.rev) {
                             descriptor.rev = node.summary.rev;
                         }
