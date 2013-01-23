@@ -89,12 +89,13 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
             }
             API.FS_RECURSIVE.mkdirSyncRecursive(path);
 
-
             var ignoreRules = {
                 // Rules that match the top of the tree (i.e. prefixed with `/`).
                 top: {},
                 // Rules that apply to every level.
                 every: {},
+                // Rules that include specific files and directories.
+                include: {},
                 filename: null
             };
 
@@ -108,7 +109,11 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
             function loadIgnoreRules(callback) {
                 function insert(rule) {
                     var key = rule.split("*")[0];
-                    var scope = (/^\//.test(rule)) ? "top" : "every";
+                    var scope = /^!/.test(rule) ? "include" : ( /^\//.test(rule) ? "top" : "every" );
+                    if (scope === "include") {
+                        key = key.substring(1);
+                        rule = rule.substring(1);
+                    }
                     if (!ignoreRules[scope][key]) {
                         ignoreRules[scope][key] = [];
                     }
@@ -185,6 +190,9 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                                     return false;
                                 }
                             }
+                            if (select(ignoreRules.include, subPath + "/" + basename + ((type === "dir") ? "/" : ""))) {
+                                return false;
+                            }
                             if (select(ignoreRules.top, subPath + "/" + basename + ((type === "dir") ? "/" : ""))) {
                                 return true;
                             }
@@ -247,10 +255,21 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                                 });
                             } else
                             if (stat.isDirectory()) {
+                                var walk = false;
                                 if (!ignore("dir")) {
                                     list[subPath + "/" + basename] = {
                                         dir: true
                                     };
+                                    walk = true;
+                                } else {
+                                    for (var path in ignoreRules.include) {
+                                        if (path.substring(0, (subPath + "/" + basename).length) === (subPath + "/" + basename)) {
+                                            walk = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (walk) {
                                     c += 1;
                                     walkTree(subPath + "/" + basename, function(err, subList) {
                                         if (err) return error(err);
@@ -281,20 +300,36 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
             }
 
             function copyFiles(fromPath, toPath, list, callback) {
+
                 var roots = [
                     [fromPath, toPath, false]
                 ];
+                for (var path in ignoreRules.include) {
+                    roots.push([PATH.join(fromPath, path), PATH.join(toPath, path), false]);
+                }
+
                 function copy() {
                     try {
                         var paths = roots.shift();
                         if (paths[2]) {
                             FS.unlinkSync(paths[1]);
                         }
+                        options.logger.debug("Copying " + paths[0] + " to " + paths[1]);
+
+                        function next() {
+                            if (roots.length === 0) return callback(null);
+                            return copy();
+                        }
+
+                        API.FS.mkdirs(PATH.dirname(paths[1]));
+
                         API.COPY(paths[0], paths[1], {
+                            // Return `true` to copy.
                             filter: function(path) {
-                                if (path === fromPath) return true;
+                                if (path === paths[0]) return true;
                                 path = ((paths[2])?paths[2]:"") + path.substring(paths[0].length);
                                 if (list[path]) {
+                                    // If we encounter a symlink we enqueue the resolved path to pull in the external sources.
                                     if (typeof list[path].symlink !== "undefined" && paths[0] != list[path].symlinkReal) {
                                         roots.push([list[path].symlinkReal, PATH.join(toPath, path), path]);
                                     }
@@ -304,8 +339,7 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                             }
                         }, function(err) {
                             if (err) return callback(err);
-                            if (roots.length === 0) return callback(null);
-                            return copy();
+                            return next();
                         });
                     } catch(err) {
                         return callback(err);
@@ -410,7 +444,7 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                 walkTree("", function(err, list) {
                     if (err) return deferred.reject(err);
 
-                    options.logger.info("Found '" + (stats.totalFiles - stats.ignoredFiles) + "' files (size: " + stats.totalSize + " bytes) while ignoring '" + stats.ignoredFiles + "' files based on '" + stats.ignoreRulesCount + "' ignore rules.");
+                    options.logger.info("Found '" + (stats.totalFiles - stats.ignoredFiles) + "' files (size: " + stats.totalSize + " bytes) after ignoring '" + stats.ignoredFiles + "' files based on '" + stats.ignoreRulesCount + "' ignore rules.");
 
                     copyFiles(plugin.node.path, path, list, function(err) {
                         if (err) return deferred.reject(err);
