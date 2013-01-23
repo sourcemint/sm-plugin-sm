@@ -395,6 +395,18 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                         delete descriptor._id;
                         delete descriptor._from;
 
+                        // Go through all bin paths to ensure they exist.
+                        if (descriptor.bin) {
+                            for (var name in descriptor.bin) {
+                                if (!PATH.existsSync(PATH.join(path, node.summary.relpath, descriptor.bin[name]))) {
+                                    delete descriptor.bin[name];
+                                }
+                            }
+                            if (Object.keys(descriptor.bin).length === 0) {
+                                delete descriptor.bin;
+                            }
+                        }
+
                         // Set some required properties.
                         descriptor.uid = node.summary.uid;
                         if (node.summary.rev) {
