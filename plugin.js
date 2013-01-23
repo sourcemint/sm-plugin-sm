@@ -2,7 +2,6 @@
 const PATH = require("path");
 const FS = require("graceful-fs");
 const SPAWN = require("child_process").spawn;
-const COPY = require("ncp").ncp;
 
 
 exports.for = function(API, plugin) {
@@ -291,7 +290,7 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                         if (paths[2]) {
                             FS.unlinkSync(paths[1]);
                         }
-                        COPY(paths[0], paths[1], {
+                        API.COPY(paths[0], paths[1], {
                             filter: function(path) {
                                 if (path === fromPath) return true;
                                 path = ((paths[2])?paths[2]:"") + path.substring(paths[0].length);
