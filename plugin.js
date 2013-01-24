@@ -43,12 +43,12 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
 	}
 
 	plugin.test = function(node, options) {
-		if (!node.descriptors.package.scripts || !node.descriptors.package.scripts.test) {
+		if (!node.descriptor.package.scripts || !node.descriptor.package.scripts.test) {
             API.TERM.stdout.writenl("\0yellow(No `scripts.test` property found in package descriptor for package '" + node.path + "'.\0)");
             return API.Q.resolve();
 		}
 
-		var testCommand = node.descriptors.package.scripts.test;
+		var testCommand = node.descriptor.package.scripts.test;
 
 		if (options.cover) {
 			if (/^(?:node\s*)?(\S*\.js)$/.test(testCommand)) {
@@ -354,7 +354,7 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                     try {
 
                         // TODO: Always write a package descriptor even if original package did not have one?
-                        if (!node.descriptors.package) return false;
+                        if (!node.descriptor.package) return false;
 
                         var descriptorPath = null;
                         if (circularNode) {
@@ -363,7 +363,7 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                             descriptorPath = PATH.join(path, node.summary.relpath, "package.json");
                         }
 
-                        var descriptor = API.UTIL.deepCopy(node.descriptors.package);
+                        var descriptor = API.UTIL.deepCopy(node.descriptor.package);
 
                         // Remove properties that are not needed at runtime.
                         delete descriptor.version;
