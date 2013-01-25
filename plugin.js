@@ -27,7 +27,7 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
     }
 
 	plugin.install = function(packagePath, options) {
-        return API.Q.call(function() {
+        return API.Q.fcall(function() {
             if (!PATH.existsSync(PATH.join(packagePath, "package.json"))) {
                 return;
             }
@@ -84,7 +84,7 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
 	}
 
     plugin.export = function(path, options) {
-        return API.Q.call(function() {
+        return API.Q.fcall(function() {
             if (PATH.existsSync(path)) {
                 if (!options.delete) {
                     API.TERM.stdout.writenl("\0red(" + "Export target directory '" + path + "' already exists. Use --delete." + "\0)");
