@@ -16,9 +16,14 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
 
         }
 
-        return self.node.getPlugin("archive").then(function(pm) {
-            return pm.resolveLocator(locator, options);
+        var deferred = API.Q.defer();
+
+        self.node.getPlugin("archive", function(err, pm) {
+            if (err) return deferred.reject(err);
+            return pm.resolveLocator(locator, options).then(deferred.resolve, deferred.reject);
         });
+
+        return deferred.promise;
     }
 
 	plugin.install = function(packagePath, options) {
