@@ -7,7 +7,7 @@ const SPAWN = require("child_process").spawn;
 exports.for = function(API, plugin) {
 
 
-    plugin.resolveLocator = function(locator, options) {
+    plugin.resolveLocator = function(locator, options, callback) {
         var self = this;
 
         if (!/^https?:\/\//.test(locator.descriptor.pointer)) {
@@ -16,14 +16,10 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
 
         }
 
-        var deferred = API.Q.defer();
-
-        self.node.getPlugin("archive", function(err, pm) {
-            if (err) return deferred.reject(err);
-            return pm.resolveLocator(locator, options).then(deferred.resolve, deferred.reject);
+        return self.node.getPlugin("archive", function(err, pm) {
+            if (err) return callback(err);
+            return pm.resolveLocator(locator, options, callback);
         });
-
-        return deferred.promise;
     }
 
 	plugin.install = function(packagePath, options) {
