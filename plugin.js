@@ -24,7 +24,7 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
 
 	plugin.install = function(packagePath, options) {
         return API.Q.fcall(function() {
-            if (!PATH.existsSync(PATH.join(packagePath, "package.json"))) {
+            if (!API.FS.existsSync(PATH.join(packagePath, "package.json"))) {
                 return;
             }
             function install() {
@@ -57,7 +57,7 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                 //       Relocate this to `freedom-platform/dev`.
 				var coverageTestCommand = testCommand.replace(/^node\s*/, "");
 				coverageTestCommand = coverageTestCommand.replace(/\.js$/, "") + ".js";
-				if (PATH.existsSync(PATH.join(node.path, coverageTestCommand))) {
+				if (API.FS.existsSync(PATH.join(node.path, coverageTestCommand))) {
 					testCommand = "istanbul cover --dir .sm/coverage -- " + coverageTestCommand;
 				}
 			} else {
@@ -81,14 +81,14 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
 
     plugin.export = function(path, options) {
         return API.Q.fcall(function() {
-            if (PATH.existsSync(path)) {
+            if (API.FS.existsSync(path)) {
                 if (!options.delete) {
                     API.TERM.stdout.writenl("\0red(" + "Export target directory '" + path + "' already exists. Use --delete." + "\0)");
                     throw true;
                 }
-                API.FS_RECURSIVE.rmdirSyncRecursive(path);
+                API.FS.removeSync(path);
             }
-            API.FS_RECURSIVE.mkdirSyncRecursive(path);
+            API.FS.mkdirsSync(path);
 
             var ignoreRules = {
                 // Rules that match the top of the tree (i.e. prefixed with `/`).
@@ -130,7 +130,7 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                     ".npmignore",
                     ".gitignore"
                 ].forEach(function(basename) {
-                    if (!PATH.existsSync(PATH.join(plugin.node.path, basename))) return;
+                    if (!API.FS.existsSync(PATH.join(plugin.node.path, basename))) return;
                     if (ignoreRules.filename !== null) return;
                     ignoreRules.filename = basename;
                     FS.readFileSync(PATH.join(plugin.node.path, basename)).toString().split("\n").forEach(function(rule) {
@@ -399,7 +399,7 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                         // Go through all bin paths to ensure they exist.
                         if (descriptor.bin) {
                             for (var name in descriptor.bin) {
-                                if (!PATH.existsSync(PATH.join(path, node.summary.relpath, descriptor.bin[name]))) {
+                                if (!API.FS.existsSync(PATH.join(path, node.summary.relpath, descriptor.bin[name]))) {
                                     delete descriptor.bin[name];
                                 }
                             }
@@ -422,7 +422,7 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
 
                         // TODO: Order properties in standard sequence.
 
-                        if (!PATH.existsSync(descriptorPath)) return;
+                        if (!API.FS.existsSync(descriptorPath)) return;
 
                         FS.writeFileSync(descriptorPath, JSON.stringify(descriptor, null, 4));
 
