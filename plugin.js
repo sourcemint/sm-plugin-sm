@@ -28,6 +28,7 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                 return;
             }
             function install() {
+                if (!plugin.node.summary.scripts.install) return;
                 // Don't use NPM to call 'install' script and populate ENV with all typical SM ENV variables.
                 return callNPM(packagePath, [
                     "run-script",
