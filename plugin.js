@@ -2,6 +2,7 @@
 const PATH = require("path");
 const FS = require("graceful-fs");
 const SPAWN = require("child_process").spawn;
+const KNOX = require("knox");
 
 
 exports.for = function(API, plugin) {
@@ -79,6 +80,58 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
 		testCommand = testCommand.split(" ");
 		return API.OS.spawnInline(testCommand.shift(), testCommand, opts);
 	}
+
+
+    plugin.publish = function(options) {
+        var self = this;
+
+        var archivePath = PATH.join(self.node.path, self.node.summary.name + "-" + self.node.summary.version + ".tgz");
+
+        function upload() {
+            var deferred = API.Q.defer();
+
+            // TODO: Get a temporary key from `sourcemint.org`.
+            var client = KNOX.createClient(plugin.core.getCredentials(["github.com/sourcemint/sm-plugin-sm/0", "s3"]));
+
+            var targetUri = PATH.join(self.node.summary.uid, "-archives", PATH.basename(archivePath));
+
+            console.log("Publishing '" + archivePath + "' to '" + "s3.sourcemint.org/" + targetUri + "'");
+
+            client.headFile(targetUri, {
+                "Content-Type": "application/x-gzip",
+                "x-amz-acl": (self.node.summary.public)? "public-read" : "private"
+            }, function(err, res) {
+                if (err) return deferred.reject(err);
+                if (res.statusCode === 200) return deferred.resolve();
+                client.putFile(archivePath, targetUri, {
+                    "Content-Type": "application/x-gzip",
+                    "x-amz-acl": (self.node.summary.public)? "public-read" : "private"
+                }, function(err, res) {
+                    if (err) return deferred.reject(err);
+                    if (res.statusCode === 200) return deferred.resolve();
+                    var response = "";
+                    res.on("data", function(chunk) {
+                        response += chunk.toString();
+                    });
+                    return deferred.reject(new Error("Got status code '" + res.statusCode + "' with message: " + response));
+                });
+            });
+
+            return deferred.promise;
+        }
+
+        if (API.FS.existsSync(archivePath)) {
+            return upload();
+        } else {
+            // TODO: Don't use `npm` and just create an archive.
+            return callNPM(self.node.path, [
+                "pack"
+            ], options).then(function() {
+                return upload();
+            });
+        }
+    }
+
 
     plugin.export = function(path, options) {
         return API.Q.fcall(function() {
