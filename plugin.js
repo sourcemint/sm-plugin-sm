@@ -95,7 +95,7 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
 
             var targetUri = PATH.join(self.node.summary.uid, "-archives", PATH.basename(archivePath));
 
-            console.log("Publishing '" + archivePath + "' to '" + "s3.sourcemint.org/" + targetUri + "'");
+            console.log("Publishing '" + archivePath + "' to '" + "http://s3.sourcemint.org/" + targetUri + "'");
 
             client.headFile(targetUri, {
                 "Content-Type": "application/x-gzip",
