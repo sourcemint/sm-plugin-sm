@@ -123,7 +123,7 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
         if (API.FS.existsSync(archivePath)) {
             return upload();
         } else {
-            // TODO: Don't use `npm` and just create an archive.
+            // TODO: Don't use `npm` and just create an archive. Need to respect `.npmignore` files if present.
             return callNPM(self.node.path, [
                 "pack"
             ], options).then(function() {
