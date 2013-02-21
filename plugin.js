@@ -132,6 +132,18 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
         }
     }
 
+    plugin.deploy = function(options) {
+        var self = this;
+
+        if (!self.node.summary.scripts.deploy) return API.Q.resolve();
+
+        var opts = API.UTIL.copy(options);
+        opts.verbose = true;
+        return callNPM(self.node.path, [
+            "run-script",
+            "deploy"
+        ], opts);
+    }
 
     plugin.export = function(path, options) {
         return API.Q.fcall(function() {
