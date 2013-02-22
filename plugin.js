@@ -453,12 +453,6 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                         delete descriptor.dist;
                         delete descriptor.keywords;
                         delete descriptor.readmeFilename;
-                        // sm specific.
-                        delete descriptor.mappings;
-                        delete descriptor.devMappings;
-                        // npm specific.
-                        delete descriptor.dependencies;
-                        delete descriptor.devDependencies;
                         delete descriptor._id;
                         delete descriptor._from;
 
@@ -484,7 +478,24 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                             descriptor.version = node.summary.version;
                         }
                         descriptor.pm = node.summary.pm.install;
-                        descriptor.bundleDependencies = Object.keys(node.children);
+
+                        var dependencies = Object.keys(node.children);
+                        descriptor.bundleDependencies = [];
+                        dependencies.forEach(function(dependency) {
+                            if (API.FS.existsSync(PATH.join(path, node.summary.relpath, "node_modules", dependency))) {
+                                descriptor.bundleDependencies.push(dependency);
+                            }
+                        });
+                        [
+                            "mappings",
+                            "devMappings",
+                            "dependencies",
+                            "devDependencies"
+                        ].forEach(function(name) {
+                            if (descriptor[name] && API.UTIL.len(descriptor[name]) === 0) {
+                                delete descriptor[name];
+                            }
+                        });
 
                         // TODO: Order properties in standard sequence.
 
