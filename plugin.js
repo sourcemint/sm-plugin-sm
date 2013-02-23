@@ -206,8 +206,20 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                 });
                 if (ignoreRules.filename === null) {
                     // Default rules.
+                    /*
                     insert(".git/");
+                    insert(".gitignore");
+                    insert(".npmignore");
+                    insert(".sm/");
+                    insert(".rt/");
                     insert(".DS_Store");
+                    insert(".program.json");
+                    insert(".package.json");
+                    */
+                    insert(".*");
+                    insert(".*/");
+                    insert("/dist/");
+                    insert("program.dev.json");
                 }
                 return callback(null);
             }
@@ -430,7 +442,10 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                             descriptorPath = PATH.join(path, node.summary.relpath, "package.json");
                         }
 
-                        var descriptor = API.UTIL.deepCopy(node.descriptor.package);
+                        var descriptor = {};
+                        if (API.FS.existsSync(PATH.join(node.path, "package.json"))) {
+                            descriptor = JSON.parse(API.FS.readFileSync(PATH.join(node.path, "package.json")));
+                        }
 
                         // Remove properties that are not needed at runtime.
                         delete descriptor.version;
@@ -440,7 +455,6 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                         delete descriptor.description;
                         delete descriptor.repository;
                         delete descriptor.repositories;
-                        delete descriptor.scripts;
                         delete descriptor.name;
                         delete descriptor.publish;
                         delete descriptor.private;
