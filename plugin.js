@@ -39,8 +39,11 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
             if (packagePath === plugin.node.path) {
                 return install();
             }
-            return API.SM_CORE.for(packagePath).install(options).then(function() {
-                return install();
+            var smCore = API.SM_CORE.for(packagePath);
+            return smCore.__init(options).then(function() {
+                return smCore.install(options).then(function() {
+                    return install();
+                });
             });
         });
 	}
