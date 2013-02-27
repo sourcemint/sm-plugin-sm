@@ -141,11 +141,20 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
         if (!self.node.summary.scripts.deploy) return API.Q.resolve();
 
         var opts = API.UTIL.copy(options);
+/*
         opts.verbose = true;
         return callNPM(self.node.path, [
             "run-script",
             "deploy"
         ], opts);
+*/
+        var command = API.HELPERS.makeNodeCommanFromString(self.node.summary.scripts.deploy);
+        return API.OS.spawnInline(command.split(" ").shift(), command.split(" ").slice(1), {
+            cwd: self.node.path,
+            env: {
+                PWD: self.node.path
+            }
+        });
     }
 
     plugin.export = function(path, options) {
