@@ -1,4 +1,5 @@
 
+const ASSERT = require("assert");
 const PATH = require("path");
 const FS = require("graceful-fs");
 const SPAWN = require("child_process").spawn;
@@ -148,12 +149,18 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
             "deploy"
         ], opts);
 */
+        var env = {
+            PWD: self.node.path
+        };
+        var pinf = plugin.API.PINF.forProgram(self.node.path)(self.node.path);
+        pinf.augmentEnv(env, {
+            inline: options.inline || false,
+            mode: options.mode || false
+        });
         var command = API.HELPERS.makeNodeCommanFromString(self.node.summary.scripts.deploy);
         return API.OS.spawnInline(command.split(" ").shift(), command.split(" ").slice(1), {
-            cwd: self.node.path,
-            env: {
-                PWD: self.node.path
-            }
+            cwd: env.PWD,
+            env: env
         });
     }
 
