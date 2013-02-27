@@ -185,36 +185,46 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                 totalSize: 0
             };
 
-            function loadIgnoreRules(callback) {
-                function insert(rule) {
-                    var key = rule.split("*")[0];
-                    var scope = /^!/.test(rule) ? "include" : ( /^\//.test(rule) ? "top" : "every" );
-                    if (scope === "include") {
-                        key = key.substring(1);
-                        rule = rule.substring(1);
-                    }
-                    if (!ignoreRules[scope][key]) {
-                        ignoreRules[scope][key] = [];
-                    }
-                    var re = new RegExp(rule.replace("*", "[^\\/]*?"));
-                    ignoreRules[scope][key].push(function applyRule(path) {
-                        if (path === rule || re.test(path)) return true;
-                        return false;
-                    });
-                    stats.ignoreRulesCount += 1;
+            function insertIgnoreRule(ignoreRules, rule, subPath) {
+                var key = rule.split("*")[0];
+                var scope = /^!/.test(rule) ? "include" : ( /^\//.test(rule) ? "top" : "every" );
+                if (scope === "include") {
+                    key = key.substring(1);
+                    rule = rule.substring(1);
                 }
+                if (subPath && /^\//.test(key)) {
+                    key = subPath + key;
+                }
+                if (!ignoreRules[scope][key]) {
+                    ignoreRules[scope][key] = [];
+                }
+                var re = new RegExp(rule.replace("*", "[^\\/]*?"));
+                ignoreRules[scope][key].push(function applyRule(path) {
+                    if (path === rule || re.test(path)) return true;
+                    return false;
+                });
+                stats.ignoreRulesCount += 1;
+            }
+
+            function loadIgnoreRulesFile(ignoreRules, path, subPath) {
+                if (!API.FS.existsSync(path)) return false;
+                FS.readFileSync(path).toString().split("\n").forEach(function(rule) {
+                    if (!rule) return;
+                    insertIgnoreRule(ignoreRules, rule, subPath);
+                });
+                return true;
+            }
+
+            function loadIgnoreRules(callback) {
                 [
                     ".distignore",
                     ".npmignore",
                     ".gitignore"
                 ].forEach(function(basename) {
-                    if (!API.FS.existsSync(PATH.join(plugin.node.path, basename))) return;
                     if (ignoreRules.filename !== null) return;
-                    ignoreRules.filename = basename;
-                    FS.readFileSync(PATH.join(plugin.node.path, basename)).toString().split("\n").forEach(function(rule) {
-                        if (!rule) return;
-                        insert(rule);
-                    });
+                    if (loadIgnoreRulesFile(ignoreRules, PATH.join(plugin.node.path, basename))) {
+                        ignoreRules.filename = basename;
+                    }
                 });
                 if (ignoreRules.filename === null) {
                     // Default rules.
@@ -228,17 +238,22 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                     insert(".program.json");
                     insert(".package.json");
                     */
-                    insert(".*");
-                    insert(".*/");
-                    insert("/dist/");
-                    insert("program.dev.json");
+                    insertIgnoreRule(ignoreRules, ".*");
+                    insertIgnoreRule(ignoreRules, ".*/");
+                    insertIgnoreRule(ignoreRules, "/dist/");
+                    insertIgnoreRule(ignoreRules, "program.dev.json");
                 }
                 return callback(null);
             }
 
-            function walkTree(subPath, callback) {
+            function walkTree(ignoreRules, subPath, callback) {
                 var list = {};
                 var c = 0;
+                // Respect nested `.distignore` files.
+                if (API.FS.existsSync(PATH.join(plugin.node.path, subPath, ".distignore"))) {
+                    ignoreRules = API.UTIL.deepCopy(ignoreRules);
+                    loadIgnoreRulesFile(ignoreRules, PATH.join(plugin.node.path, subPath, ".distignore"), subPath);
+                }
                 FS.readdir(PATH.join(plugin.node.path, subPath), function(err, files) {
                     if (err) return callback(err);
                     if (files.length === 0) {
@@ -330,7 +345,7 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                                         }
                                         if (linkStat.isDirectory()) {
                                             c += 1;
-                                            walkTree(subPath + "/" + basename, function(err, subList) {
+                                            walkTree(ignoreRules, subPath + "/" + basename, function(err, subList) {
                                                 if (err) return error(err);
                                                 c -= 1;
                                                 for (var key in subList) {
@@ -362,7 +377,7 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                                 }
                                 if (walk) {
                                     c += 1;
-                                    walkTree(subPath + "/" + basename, function(err, subList) {
+                                    walkTree(ignoreRules, subPath + "/" + basename, function(err, subList) {
                                         if (err) return error(err);
                                         c -= 1;
                                         for (var key in subList) {
@@ -557,7 +572,7 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
             loadIgnoreRules(function(err) {
                 if (err) return deferred.reject(err);
 
-                walkTree("", function(err, list) {
+                walkTree(ignoreRules, "", function(err, list) {
                     if (err) return deferred.reject(err);
 
                     options.logger.info("Found '" + (stats.totalFiles - stats.ignoredFiles) + "' files (size: " + stats.totalSize + " bytes) after ignoring '" + stats.ignoredFiles + "' files based on '" + stats.ignoreRulesCount + "' ignore rules.");
