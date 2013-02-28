@@ -165,6 +165,9 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
     }
 
     plugin.export = function(path, options) {
+
+        // TODO: If exported size jumps by more than 10% (based on previous export) log a warning.
+
         return API.Q.fcall(function() {
             if (API.FS.existsSync(path)) {
                 if (!options.delete) {
