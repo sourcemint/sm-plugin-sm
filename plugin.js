@@ -154,6 +154,8 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
         };
         var pinf = plugin.API.PINF.forProgram(self.node.path)(self.node.path);
         pinf.augmentEnv(env, {
+            verbose: options.verbose || false,
+            debug: options.debug || false,
             inline: options.inline || false,
             mode: options.mode || false
         });
