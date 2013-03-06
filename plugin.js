@@ -198,6 +198,12 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
             };
 
             function insertIgnoreRule(ignoreRules, rule, subPath) {
+                if (options.includeDependencies) {
+                    if (/^\/?node_modules\/?$/.test(rule)) {
+                        // We ignore the catalog so that the dependencies don't get updated on install.
+                        rule = "sm-catalog.json";
+                    }
+                }
                 var key = rule.split("*")[0];
                 var scope = /^!/.test(rule) ? "include" : ( /^\//.test(rule) ? "top" : "every" );
                 if (scope === "include") {
@@ -210,7 +216,7 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                 if (!ignoreRules[scope][key]) {
                     ignoreRules[scope][key] = [];
                 }
-                var re = new RegExp(rule.replace("*", "[^\\/]*?"));
+                var re = new RegExp(API.UTIL.regEscape(rule).replace("\\*", "[^\\/]*?"));
                 ignoreRules[scope][key].push(function applyRule(path) {
                     if (path === rule || re.test(path)) return true;
                     return false;
@@ -251,7 +257,8 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                     insert(".package.json");
                     */
                     insertIgnoreRule(ignoreRules, ".*");
-                    insertIgnoreRule(ignoreRules, ".*/");
+                    //insertIgnoreRule(ignoreRules, ".*/");
+                    insertIgnoreRule(ignoreRules, "*~backup-*");
                     insertIgnoreRule(ignoreRules, "/dist/");
                     insertIgnoreRule(ignoreRules, "program.dev.json");
                 }
@@ -352,20 +359,21 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
                                                 symlink: val,
                                                 symlinkReal: linkDir
                                             };
+                                            if (linkStat.isDirectory()) {
+                                                c += 1;
+                                                walkTree(ignoreRules, subPath + "/" + basename, function(err, subList) {
+                                                    if (err) return error(err);
+                                                    c -= 1;
+                                                    for (var key in subList) {
+                                                        list[key] = subList[key];
+                                                    }
+                                                    done();
+                                                });
+                                            } else {
+                                                done();
+                                            }
                                         } else {
                                             stats.ignoredFiles += 1;
-                                        }
-                                        if (linkStat.isDirectory()) {
-                                            c += 1;
-                                            walkTree(ignoreRules, subPath + "/" + basename, function(err, subList) {
-                                                if (err) return error(err);
-                                                c -= 1;
-                                                for (var key in subList) {
-                                                    list[key] = subList[key];
-                                                }
-                                                done();
-                                            });
-                                        } else {
                                             done();
                                         }
                                     });
