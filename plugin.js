@@ -2,6 +2,7 @@
 const ASSERT = require("assert");
 const PATH = require("path");
 const FS = require("graceful-fs");
+const EXEC = require("child_process").exec;
 const SPAWN = require("child_process").spawn;
 const KNOX = require("knox");
 
@@ -58,6 +59,7 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
 		var testCommand = node.descriptor.package.scripts.test;
 
 		if (options.cover) {
+            return API.Q.reject(new Error("TODO: Enable test coverage!"));
 			if (/^(?:node\s*)?(\S*\.js)$/.test(testCommand)) {
 				// TODO: Support other test coverage tools via config and relocate impl into separate plugins.
                 //       Relocate this to `freedom-platform/dev`.
@@ -127,12 +129,41 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
         if (API.FS.existsSync(archivePath)) {
             return upload();
         } else {
-            // TODO: Don't use `npm` and just create an archive. Need to respect `.npmignore` files if present.
-            return callNPM(self.node.path, [
-                "pack"
-            ], options).then(function() {
-                return upload();
+/*            
+            // If `npm` not found we just create an archive.
+            return API.OS.which("npm").then(function(command) {
+                if (command) {
+                    // TODO: Never use NPM to create archive.
+                    return callNPM(self.node.path, [
+                        "pack"
+                    ], options).then(function() {
+                        return upload();
+                    });
+                } else {
+*/
+                    // TODO: Need to respect `.npmignore` files if present.
+                    var tmpParchivePath = PATH.join(archivePath, "../..", PATH.basename(archivePath));
+                    if (API.FS.existsSync(tmpParchivePath)) {
+                        API.FS.unlinkSync(tmpParchivePath);
+                    }
+                    var deferred = API.Q.defer();
+                    var command = "tar -czvf " + tmpParchivePath + " " + PATH.basename(self.node.path);
+                    EXEC(command, {
+                        cwd: PATH.dirname(self.node.path)
+                    }, function (error, stdout, stderr) {
+                        if (error) {
+                            console.error("STDOUT", stdout);
+                            console.error("STDERR", stderr);
+                            return deferred.reject(new Error("Error while calling `" + command + "`"));
+                        }
+                        API.FS.renameSync(tmpParchivePath, archivePath);
+                        return upload().then(deferred.resolve, deferred.reject);
+                    });
+                    return deferred.promise;
+/*
+                }
             });
+*/
         }
     }
 

@@ -4,8 +4,10 @@
     "pm": "npm",
     "main": "./plugin.js",
     "dependencies": {
-        "istanbul": "~0.1.27",
         "graceful-fs": "~1.1.14",
     	"knox": "~0.5.3"
+    },
+    "optionalDependencies": {
+        "istanbul": "~0.1.27"
     }
 }
