@@ -339,7 +339,7 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
 
                                     var linkDir = null;
                                     try {
-                                        linkDir = FS.realpathSync(PATH.resolve(PATH.join(plugin.node.path, subPath), val));
+                                        linkDir = FS.realpathSync(PATH.resolve(FS.realpathSync(PATH.join(plugin.node.path, subPath)), val));
                                     } catch(err) {
                                         if (err.code === "ENOENT") return done();
                                         throw err;
