@@ -73,6 +73,9 @@ throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.
 	            return API.Q.resolve();
 			}
 		}
+        if (options.filter) {
+            testCommand += " --filter " + options.filter;
+        }
 		var opts = API.UTIL.copy(options);
 		opts.cwd = node.path;
 		opts.env = {
