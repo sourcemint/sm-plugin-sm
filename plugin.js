@@ -15,7 +15,7 @@ exports.for = function(API, plugin) {
 
         if (!/^https?:\/\//.test(locator.descriptor.pointer)) {
 
-throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.1.0).");
+//throw new Error("TODO: Resolve pinf-style uris (github.com/sourcemint/loader/~0.1.0). Matched: " + locator.descriptor.pointer);
 
         }
 
